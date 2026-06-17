@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lotería DRABBA</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #faf7f4; color: #1a1a1a; min-height: 100vh; }
@@ -12,20 +13,20 @@
     .topbar { background: #7a1f2e; color: #fff; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
     .topbar-title { font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
     .topbar-title i { font-size: 22px; }
-    .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .stats { display: flex; gap: 10px; }
     .stat { background: rgba(255,255,255,.15); border-radius: 8px; padding: 6px 16px; font-size: 13px; display: flex; align-items: center; gap: 6px; }
     .stat b { font-weight: 600; font-size: 15px; }
-    .btn-reset-top { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.3); color: #fff; border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background .15s; }
-    .btn-reset-top:hover { background: rgba(255,255,255,.2); }
+    .topbar-btn { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.3); color: #fff; border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background .15s; white-space: nowrap; }
+    .topbar-btn:hover { background: rgba(255,255,255,.2); }
+    .topbar-btn.green { background: rgba(100,200,100,.2); border-color: rgba(100,200,100,.4); }
+    .topbar-btn.green:hover { background: rgba(100,200,100,.3); }
 
     .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
-
     .controls { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
     .search-wrap { flex: 1; min-width: 200px; display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #e0d8d0; border-radius: 10px; padding: 9px 14px; }
     .search-wrap i { color: #aaa; font-size: 17px; }
     .search-wrap input { border: none; background: transparent; font-size: 14px; outline: none; width: 100%; color: #1a1a1a; }
-
     .legend { display: flex; gap: 16px; flex-wrap: wrap; }
     .leg { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #666; }
     .leg-dot { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
@@ -37,7 +38,6 @@
     .num.taken:hover { background: #f7c1c1; }
     .num.selected { border: 2px solid #378ADD; background: #e6f1fb; color: #0c447c; }
 
-    /* MODAL */
     .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 200; opacity: 0; pointer-events: none; transition: opacity .2s; }
     .modal-bg.open { opacity: 1; pointer-events: all; }
     .modal { background: #fff; border-radius: 16px; padding: 28px 28px 22px; width: 380px; max-width: 94vw; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
@@ -46,23 +46,22 @@
     .modal h2 { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
     .modal .sub { font-size: 13px; color: #777; margin-bottom: 18px; }
     .modal label { font-size: 13px; color: #555; display: block; margin-bottom: 5px; font-weight: 500; }
-
     .input-row { display: flex; gap: 8px; margin-bottom: 6px; }
     .input-row input { flex: 1; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 9px; font-size: 14px; outline: none; color: #1a1a1a; transition: border-color .15s; }
     .input-row input:focus { border-color: #7a1f2e; }
     .btn-buscar { padding: 10px 16px; border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1.5px solid #ddd; background: #f5f0ec; color: #444; white-space: nowrap; transition: all .15s; display: flex; align-items: center; gap: 6px; }
-    .btn-buscar:hover { background: #ede5dc; border-color: #c4a882; }
-
+    .btn-buscar:hover { background: #ede5dc; }
     .hint { font-size: 11px; color: #aaa; margin-bottom: 14px; }
     .client-card { border-radius: 10px; border: 1.5px solid #ddd; padding: 12px 14px; margin-bottom: 16px; font-size: 13px; }
     .client-card.loading { background: #fafafa; border-color: #e0d8d0; }
     .client-card.found { background: #eaf3de; border-color: #97c459; }
     .client-card.not-found { background: #fcebeb; border-color: #f09595; }
+    .client-card.duplicate { background: #faeeda; border-color: #ef9f27; }
     .client-name { font-size: 15px; font-weight: 600; color: #27500a; margin-bottom: 3px; }
     .client-detail { color: #3b6d11; font-size: 12px; margin-top: 2px; display: flex; align-items: center; gap: 5px; }
     .client-err { color: #a32d2d; font-weight: 600; }
+    .client-warn { color: #854f0b; font-weight: 600; }
     .client-id { color: #888; font-size: 11px; margin-top: 4px; }
-
     .modal-btns { display: flex; gap: 10px; margin-top: 6px; }
     .btn { flex: 1; padding: 11px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1.5px solid #ddd; background: #f5f5f5; color: #444; transition: all .15s; }
     .btn:hover { background: #eee; }
@@ -74,7 +73,7 @@
 
     .taken-info { background: #fafafa; border: 1px solid #eee; border-radius: 10px; padding: 14px 16px; margin-bottom: 18px; }
     .taken-info .ti-code { font-size: 13px; color: #888; margin-bottom: 4px; }
-    .taken-info .ti-name { font-size: 16px; font-weight: 600; color: #1a1a1a; }
+    .taken-info .ti-name { font-size: 16px; font-weight: 600; }
     .taken-info .ti-detail { font-size: 12px; color: #555; margin-top: 3px; display: flex; align-items: center; gap: 5px; }
     .taken-info .ti-ts { font-size: 11px; color: #aaa; margin-top: 8px; }
 
@@ -84,17 +83,16 @@
     .list-item:last-child { border-bottom: none; }
     .num-badge { width: 42px; height: 42px; border-radius: 10px; background: #fcebeb; color: #a32d2d; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; flex-shrink: 0; }
     .li-info { flex: 1; min-width: 0; }
-    .li-code { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+    .li-code { font-size: 13px; font-weight: 600; }
     .li-name { font-size: 12px; color: #27500a; margin-top: 1px; }
     .li-ts { font-size: 11px; color: #aaa; margin-top: 1px; }
     .del-btn { border: none; background: none; cursor: pointer; color: #bbb; font-size: 18px; padding: 6px; border-radius: 6px; transition: all .15s; }
     .del-btn:hover { background: #fcebeb; color: #a32d2d; }
 
-    /* RESET MODAL */
     .reset-modal { background: #fff; border-radius: 16px; padding: 28px; width: 340px; max-width: 94vw; box-shadow: 0 20px 60px rgba(0,0,0,.2); text-align: center; }
     .reset-modal h2 { font-size: 17px; font-weight: 600; margin-bottom: 6px; color: #a32d2d; }
     .reset-modal p { font-size: 13px; color: #777; margin-bottom: 18px; }
-    .reset-modal input { width: 100%; padding: 12px; border: 1.5px solid #ddd; border-radius: 9px; font-size: 18px; text-align: center; letter-spacing: 8px; outline: none; margin-bottom: 8px; }
+    .reset-modal input { width: 100%; padding: 12px; border: 1.5px solid #ddd; border-radius: 9px; font-size: 22px; text-align: center; letter-spacing: 10px; outline: none; margin-bottom: 8px; }
     .reset-modal input:focus { border-color: #a32d2d; }
     .reset-error { font-size: 12px; color: #a32d2d; margin-bottom: 12px; min-height: 18px; }
     .reset-btns { display: flex; gap: 10px; }
@@ -105,6 +103,7 @@
 
     @media (max-width: 600px) {
       .grid { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; }
+      .topbar { padding: 12px 14px; }
       .topbar-title { font-size: 16px; }
     }
   </style>
@@ -121,7 +120,10 @@
       <div class="stat">Libres: <b id="cnt-free">99</b></div>
       <div class="stat">Apartados: <b id="cnt-taken">0</b></div>
     </div>
-    <button class="btn-reset-top" id="btn-reset-top">
+    <button class="topbar-btn green" id="btn-exportar">
+      <i class="ti ti-file-spreadsheet"></i> Exportar Excel
+    </button>
+    <button class="topbar-btn" id="btn-reset-top">
       <i class="ti ti-refresh"></i> Resetear
     </button>
   </div>
@@ -136,7 +138,6 @@
     <div class="legend">
       <div class="leg"><div class="leg-dot" style="background:#fff;border:1px solid #ccc"></div>Disponible</div>
       <div class="leg"><div class="leg-dot" style="background:#fcebeb;border:1px solid #f09595"></div>Apartado</div>
-      <div class="leg"><div class="leg-dot" style="background:#e6f1fb;border:2px solid #378ADD"></div>Seleccionado</div>
     </div>
   </div>
 
@@ -148,12 +149,12 @@
   </div>
 </div>
 
-<!-- MODAL APARTAR -->
+<!-- MODAL APARTAR/VER -->
 <div class="modal-bg" id="modal-bg">
   <div class="modal">
     <div id="modal-num-badge" class="modal-num">00</div>
     <h2 id="modal-title">Número 00</h2>
-    <div class="sub" id="modal-sub">Ingresa el código CUS del cliente</div>
+    <div class="sub" id="modal-sub"></div>
 
     <div id="assign-view">
       <label>Código cliente (CUS-XXXXX)</label>
@@ -161,7 +162,7 @@
         <input type="text" id="code-input" placeholder="ej: CUS-20373 o 20373" autocomplete="off" />
         <button class="btn-buscar" id="btn-buscar"><i class="ti ti-search"></i> Buscar</button>
       </div>
-      <div class="hint">Presiona Enter o Buscar para verificar el cliente</div>
+      <div class="hint">Presiona Enter o Buscar para verificar</div>
       <div class="client-card" id="client-card" style="display:none"></div>
       <div class="modal-btns">
         <button class="btn" id="btn-cancel">Cancelar</button>
@@ -184,7 +185,7 @@
   <div class="reset-modal">
     <i class="ti ti-alert-triangle" style="font-size:32px;color:#e24b4a;margin-bottom:8px;display:block"></i>
     <h2>Resetear lotería</h2>
-    <p>Esto borrará todos los números apartados. Ingresa la contraseña para continuar.</p>
+    <p>Esto borrará todos los números apartados.<br>Ingresa la contraseña para continuar.</p>
     <input type="password" id="reset-pass" placeholder="••••" maxlength="10" />
     <div class="reset-error" id="reset-error"></div>
     <div class="reset-btns">
@@ -200,6 +201,17 @@ let selected = null;
 let foundContact = null;
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+function getContactKey(contact) {
+  return (contact.contact_number || contact.contact_id || '').toLowerCase().trim();
+}
+
+function findDuplicate(contactKey) {
+  return Object.entries(data).find(([num, d]) => {
+    const k = (d.contact_key || d.code || '').toLowerCase().trim();
+    return k === contactKey;
+  });
+}
 
 async function loadFromServer() {
   try {
@@ -332,21 +344,38 @@ async function buscarCliente() {
   try {
     const res = await fetch('/webhook/consulta-cliente-loteria?customer_id=' + encodeURIComponent(raw));
     const json = await res.json();
+
     if (json.error || !json.contact) {
       card.className = 'client-card not-found';
       card.innerHTML = `<div class="client-err"><i class="ti ti-alert-circle" style="margin-right:6px"></i>${json.error || 'Cliente no encontrado'}</div>`;
-    } else {
-      const c = json.contact;
-      foundContact = c;
-      card.className = 'client-card found';
-      card.innerHTML = `
-        <div class="client-name"><i class="ti ti-circle-check" style="margin-right:4px"></i>${c.contact_name || '—'}</div>
-        ${c.mobile || c.phone ? `<div class="client-detail"><i class="ti ti-phone"></i>${c.mobile || c.phone}</div>` : ''}
-        ${c.email ? `<div class="client-detail"><i class="ti ti-mail"></i>${c.email}</div>` : ''}
-        <div class="client-id">ID: ${c.contact_number || c.contact_id}</div>
-      `;
-      document.getElementById('btn-confirm').disabled = false;
+      return;
     }
+
+    const c = json.contact;
+    const contactKey = getContactKey(c);
+    const dup = findDuplicate(contactKey);
+
+    if (dup) {
+      const [dupNum] = dup;
+      card.className = 'client-card duplicate';
+      card.innerHTML = `
+        <div class="client-warn"><i class="ti ti-alert-triangle" style="margin-right:6px"></i>Este cliente ya tiene el número <b>${pad(dupNum)}</b> apartado</div>
+        <div style="font-size:12px;color:#854f0b;margin-top:4px">${c.contact_name} — ${c.contact_number}</div>
+        <div style="font-size:11px;color:#aaa;margin-top:4px">Un cliente solo puede tener un número</div>
+      `;
+      return;
+    }
+
+    foundContact = c;
+    card.className = 'client-card found';
+    card.innerHTML = `
+      <div class="client-name"><i class="ti ti-circle-check" style="margin-right:4px"></i>${c.contact_name || '—'}</div>
+      ${c.mobile || c.phone ? `<div class="client-detail"><i class="ti ti-phone"></i>${c.mobile || c.phone}</div>` : ''}
+      ${c.email ? `<div class="client-detail"><i class="ti ti-mail"></i>${c.email}</div>` : ''}
+      <div class="client-id">ID: ${c.contact_number || c.contact_id}</div>
+    `;
+    document.getElementById('btn-confirm').disabled = false;
+
   } catch(e) {
     card.className = 'client-card not-found';
     card.innerHTML = `<div class="client-err"><i class="ti ti-wifi-off" style="margin-right:6px"></i>Error de conexión</div>`;
@@ -359,6 +388,7 @@ async function confirmAssign() {
   const now = new Date().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
   data[selected] = {
     code: foundContact.contact_number || raw,
+    contact_key: getContactKey(foundContact),
     nombre: foundContact.contact_name || '',
     telefono: foundContact.mobile || foundContact.phone || '',
     email: foundContact.email || '',
@@ -383,6 +413,32 @@ async function quickRelease(num) {
   render();
 }
 
+// EXPORTAR EXCEL
+document.getElementById('btn-exportar').onclick = () => {
+  const keys = Object.keys(data).sort((a, b) => parseInt(a) - parseInt(b));
+  if (!keys.length) { alert('No hay números apartados para exportar'); return; }
+
+  const rows = keys.map(k => ({
+    'Número': pad(k),
+    'Código Cliente': data[k].code || '',
+    'Nombre': data[k].nombre || '',
+    'Teléfono': data[k].telefono || '',
+    'Email': data[k].email || '',
+    'Fecha Apartado': data[k].ts || ''
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [
+    { wch: 10 }, { wch: 16 }, { wch: 28 }, { wch: 18 }, { wch: 28 }, { wch: 20 }
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Lotería DRABBA');
+
+  const fecha = new Date().toLocaleDateString('es-CO').replace(/\//g, '-');
+  XLSX.writeFile(wb, `loteria-drabba-${fecha}.xlsx`);
+};
+
 // RESET
 document.getElementById('btn-reset-top').onclick = () => {
   document.getElementById('reset-pass').value = '';
@@ -390,11 +446,9 @@ document.getElementById('btn-reset-top').onclick = () => {
   document.getElementById('reset-modal-bg').classList.add('open');
   setTimeout(() => document.getElementById('reset-pass').focus(), 100);
 };
-
 document.getElementById('btn-reset-cancel').onclick = () => {
   document.getElementById('reset-modal-bg').classList.remove('open');
 };
-
 document.getElementById('btn-reset-confirm').onclick = async () => {
   const pass = document.getElementById('reset-pass').value;
   const errEl = document.getElementById('reset-error');
