@@ -7,234 +7,64 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #faf7f4; color: #1a1a1a; min-height: 100vh; }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #faf7f4;
-      color: #1a1a1a;
-      min-height: 100vh;
-    }
-
-    .topbar {
-      background: #7a1f2e;
-      color: #fff;
-      padding: 14px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .topbar-title {
-      font-size: 20px;
-      font-weight: 600;
-      letter-spacing: .3px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .topbar { background: #7a1f2e; color: #fff; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .topbar-title { font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
     .topbar-title i { font-size: 22px; }
-    .stats { display: flex; gap: 12px; }
-    .stat {
-      background: rgba(255,255,255,.15);
-      border-radius: 8px;
-      padding: 6px 16px;
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
+    .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .stats { display: flex; gap: 10px; }
+    .stat { background: rgba(255,255,255,.15); border-radius: 8px; padding: 6px 16px; font-size: 13px; display: flex; align-items: center; gap: 6px; }
     .stat b { font-weight: 600; font-size: 15px; }
-    .stat.red { background: rgba(255,255,255,.25); }
+    .btn-reset-top { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.3); color: #fff; border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background .15s; }
+    .btn-reset-top:hover { background: rgba(255,255,255,.2); }
 
     .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
 
-    .config-bar {
-      background: #fff;
-      border: 1px solid #e8e0d8;
-      border-radius: 10px;
-      padding: 12px 16px;
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 13px;
-      color: #666;
-    }
-    .config-bar i { color: #b5915f; font-size: 18px; flex-shrink: 0; }
-    .config-bar input {
-      flex: 1;
-      border: 1px solid #ddd;
-      border-radius: 7px;
-      padding: 6px 10px;
-      font-size: 13px;
-      outline: none;
-      color: #1a1a1a;
-    }
-    .config-bar input:focus { border-color: #7a1f2e; }
-
-    .controls {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .search-wrap {
-      flex: 1;
-      min-width: 200px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: #fff;
-      border: 1px solid #e0d8d0;
-      border-radius: 10px;
-      padding: 9px 14px;
-    }
+    .controls { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+    .search-wrap { flex: 1; min-width: 200px; display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #e0d8d0; border-radius: 10px; padding: 9px 14px; }
     .search-wrap i { color: #aaa; font-size: 17px; }
-    .search-wrap input {
-      border: none;
-      background: transparent;
-      font-size: 14px;
-      outline: none;
-      width: 100%;
-      color: #1a1a1a;
-    }
+    .search-wrap input { border: none; background: transparent; font-size: 14px; outline: none; width: 100%; color: #1a1a1a; }
 
-    .legend {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; }
     .leg { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #666; }
     .leg-dot { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
-      gap: 8px;
-      margin-bottom: 32px;
-    }
-
-    .num {
-      background: #fff;
-      border: 1px solid #e0d8d0;
-      border-radius: 10px;
-      padding: 14px 6px;
-      text-align: center;
-      cursor: pointer;
-      font-size: 15px;
-      font-weight: 600;
-      color: #444;
-      transition: all .15s;
-      user-select: none;
-      position: relative;
-    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 8px; margin-bottom: 32px; }
+    .num { background: #fff; border: 1px solid #e0d8d0; border-radius: 10px; padding: 14px 6px; text-align: center; cursor: pointer; font-size: 15px; font-weight: 600; color: #444; transition: all .15s; user-select: none; }
     .num:hover { background: #f5f0ec; border-color: #c4a882; transform: translateY(-1px); }
-    .num.taken {
-      background: #fcebeb;
-      border-color: #f09595;
-      color: #a32d2d;
-    }
+    .num.taken { background: #fcebeb; border-color: #f09595; color: #a32d2d; }
     .num.taken:hover { background: #f7c1c1; }
-    .num.selected {
-      border: 2px solid #378ADD;
-      background: #e6f1fb;
-      color: #0c447c;
-    }
+    .num.selected { border: 2px solid #378ADD; background: #e6f1fb; color: #0c447c; }
 
     /* MODAL */
-    .modal-bg {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,.5);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 200;
-      opacity: 0; pointer-events: none;
-      transition: opacity .2s;
-    }
+    .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 200; opacity: 0; pointer-events: none; transition: opacity .2s; }
     .modal-bg.open { opacity: 1; pointer-events: all; }
-    .modal {
-      background: #fff;
-      border-radius: 16px;
-      padding: 28px 28px 22px;
-      width: 380px;
-      max-width: 94vw;
-      box-shadow: 0 20px 60px rgba(0,0,0,.2);
-    }
-    .modal-num {
-      display: inline-block;
-      background: #7a1f2e;
-      color: #fff;
-      font-size: 28px;
-      font-weight: 700;
-      width: 58px; height: 58px;
-      border-radius: 12px;
-      line-height: 58px;
-      text-align: center;
-      margin-bottom: 12px;
-    }
+    .modal { background: #fff; border-radius: 16px; padding: 28px 28px 22px; width: 380px; max-width: 94vw; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+    .modal-num { display: inline-block; background: #7a1f2e; color: #fff; font-size: 28px; font-weight: 700; width: 58px; height: 58px; border-radius: 12px; line-height: 58px; text-align: center; margin-bottom: 12px; }
     .modal-num.taken-badge { background: #e24b4a; }
     .modal h2 { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
     .modal .sub { font-size: 13px; color: #777; margin-bottom: 18px; }
     .modal label { font-size: 13px; color: #555; display: block; margin-bottom: 5px; font-weight: 500; }
 
     .input-row { display: flex; gap: 8px; margin-bottom: 6px; }
-    .input-row input {
-      flex: 1;
-      padding: 10px 12px;
-      border: 1.5px solid #ddd;
-      border-radius: 9px;
-      font-size: 14px;
-      outline: none;
-      color: #1a1a1a;
-      transition: border-color .15s;
-    }
+    .input-row input { flex: 1; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 9px; font-size: 14px; outline: none; color: #1a1a1a; transition: border-color .15s; }
     .input-row input:focus { border-color: #7a1f2e; }
-
-    .btn-buscar {
-      padding: 10px 16px;
-      border-radius: 9px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      border: 1.5px solid #ddd;
-      background: #f5f0ec;
-      color: #444;
-      white-space: nowrap;
-      transition: all .15s;
-      display: flex; align-items: center; gap: 6px;
-    }
+    .btn-buscar { padding: 10px 16px; border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1.5px solid #ddd; background: #f5f0ec; color: #444; white-space: nowrap; transition: all .15s; display: flex; align-items: center; gap: 6px; }
     .btn-buscar:hover { background: #ede5dc; border-color: #c4a882; }
 
     .hint { font-size: 11px; color: #aaa; margin-bottom: 14px; }
-
-    .client-card {
-      border-radius: 10px;
-      border: 1.5px solid #ddd;
-      padding: 12px 14px;
-      margin-bottom: 16px;
-      font-size: 13px;
-      transition: all .2s;
-    }
+    .client-card { border-radius: 10px; border: 1.5px solid #ddd; padding: 12px 14px; margin-bottom: 16px; font-size: 13px; }
     .client-card.loading { background: #fafafa; border-color: #e0d8d0; }
     .client-card.found { background: #eaf3de; border-color: #97c459; }
     .client-card.not-found { background: #fcebeb; border-color: #f09595; }
     .client-name { font-size: 15px; font-weight: 600; color: #27500a; margin-bottom: 3px; }
     .client-detail { color: #3b6d11; font-size: 12px; margin-top: 2px; display: flex; align-items: center; gap: 5px; }
-    .client-err { color: #a32d2d; font-weight: 600; display: flex; align-items: center; gap-6px; }
+    .client-err { color: #a32d2d; font-weight: 600; }
     .client-id { color: #888; font-size: 11px; margin-top: 4px; }
 
     .modal-btns { display: flex; gap: 10px; margin-top: 6px; }
-    .btn {
-      flex: 1; padding: 11px;
-      border-radius: 10px;
-      font-size: 14px; font-weight: 600;
-      cursor: pointer;
-      border: 1.5px solid #ddd;
-      background: #f5f5f5;
-      color: #444;
-      transition: all .15s;
-    }
+    .btn { flex: 1; padding: 11px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1.5px solid #ddd; background: #f5f5f5; color: #444; transition: all .15s; }
     .btn:hover { background: #eee; }
     .btn.primary { background: #7a1f2e; border-color: #7a1f2e; color: #fff; }
     .btn.primary:hover { background: #5c1522; }
@@ -242,62 +72,40 @@
     .btn.danger { border-color: #f09595; color: #a32d2d; background: #fff; }
     .btn.danger:hover { background: #fcebeb; }
 
-    /* TAKEN VIEW */
-    .taken-info {
-      background: #fafafa;
-      border: 1px solid #eee;
-      border-radius: 10px;
-      padding: 14px 16px;
-      margin-bottom: 18px;
-    }
+    .taken-info { background: #fafafa; border: 1px solid #eee; border-radius: 10px; padding: 14px 16px; margin-bottom: 18px; }
     .taken-info .ti-code { font-size: 13px; color: #888; margin-bottom: 4px; }
     .taken-info .ti-name { font-size: 16px; font-weight: 600; color: #1a1a1a; }
     .taken-info .ti-detail { font-size: 12px; color: #555; margin-top: 3px; display: flex; align-items: center; gap: 5px; }
     .taken-info .ti-ts { font-size: 11px; color: #aaa; margin-top: 8px; }
 
-    /* LIST */
     .list-section { border-top: 1px solid #e8e0d8; padding-top: 24px; }
     .list-title { font-size: 16px; font-weight: 600; color: #1a1a1a; margin-bottom: 14px; }
-    .list-item {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 0;
-      border-bottom: 1px solid #f0e8e0;
-    }
+    .list-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f0e8e0; }
     .list-item:last-child { border-bottom: none; }
-    .num-badge {
-      width: 42px; height: 42px;
-      border-radius: 10px;
-      background: #fcebeb;
-      color: #a32d2d;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 15px;
-      flex-shrink: 0;
-    }
+    .num-badge { width: 42px; height: 42px; border-radius: 10px; background: #fcebeb; color: #a32d2d; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; flex-shrink: 0; }
     .li-info { flex: 1; min-width: 0; }
     .li-code { font-size: 13px; font-weight: 600; color: #1a1a1a; }
     .li-name { font-size: 12px; color: #27500a; margin-top: 1px; }
     .li-ts { font-size: 11px; color: #aaa; margin-top: 1px; }
-    .del-btn {
-      border: none; background: none; cursor: pointer;
-      color: #bbb; font-size: 18px; padding: 6px; border-radius: 6px;
-      transition: all .15s;
-    }
+    .del-btn { border: none; background: none; cursor: pointer; color: #bbb; font-size: 18px; padding: 6px; border-radius: 6px; transition: all .15s; }
     .del-btn:hover { background: #fcebeb; color: #a32d2d; }
 
-    .spinner {
-      display: inline-block; width: 15px; height: 15px;
-      border: 2px solid #ccc; border-top-color: #7a1f2e;
-      border-radius: 50%; animation: spin .7s linear infinite;
-      vertical-align: -3px; margin-right: 6px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    /* RESET MODAL */
+    .reset-modal { background: #fff; border-radius: 16px; padding: 28px; width: 340px; max-width: 94vw; box-shadow: 0 20px 60px rgba(0,0,0,.2); text-align: center; }
+    .reset-modal h2 { font-size: 17px; font-weight: 600; margin-bottom: 6px; color: #a32d2d; }
+    .reset-modal p { font-size: 13px; color: #777; margin-bottom: 18px; }
+    .reset-modal input { width: 100%; padding: 12px; border: 1.5px solid #ddd; border-radius: 9px; font-size: 18px; text-align: center; letter-spacing: 8px; outline: none; margin-bottom: 8px; }
+    .reset-modal input:focus { border-color: #a32d2d; }
+    .reset-error { font-size: 12px; color: #a32d2d; margin-bottom: 12px; min-height: 18px; }
+    .reset-btns { display: flex; gap: 10px; }
 
+    .spinner { display: inline-block; width: 15px; height: 15px; border: 2px solid #ccc; border-top-color: #7a1f2e; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -3px; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
     .empty { text-align: center; padding: 3rem; color: #aaa; font-size: 14px; }
 
     @media (max-width: 600px) {
       .grid { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; }
       .topbar-title { font-size: 16px; }
-      .modal { padding: 20px 16px 16px; }
     }
   </style>
 </head>
@@ -308,22 +116,18 @@
     <i class="ti ti-ticket"></i>
     Lotería DRABBA
   </div>
-  <div class="stats">
-    <div class="stat">Libres: <b id="cnt-free">99</b></div>
-    <div class="stat red">Apartados: <b id="cnt-taken">0</b></div>
+  <div class="topbar-right">
+    <div class="stats">
+      <div class="stat">Libres: <b id="cnt-free">99</b></div>
+      <div class="stat">Apartados: <b id="cnt-taken">0</b></div>
+    </div>
+    <button class="btn-reset-top" id="btn-reset-top">
+      <i class="ti ti-refresh"></i> Resetear
+    </button>
   </div>
 </div>
 
 <div class="wrap">
-
-  <div class="config-bar">
-    <i class="ti ti-settings"></i>
-    <span style="white-space:nowrap;font-weight:500;color:#444">Webhook n8n:</span>
-    <input type="text" id="n8n-url"
-      value="/webhook/consulta-cliente-loteria"
-      placeholder="https://tu-ngrok.ngrok-free.dev/webhook/consulta-cliente-loteria" />
-  </div>
-
   <div class="controls">
     <div class="search-wrap">
       <i class="ti ti-search"></i>
@@ -342,68 +146,79 @@
     <div class="list-title"><i class="ti ti-list-check" style="vertical-align:-2px;margin-right:6px"></i>Números apartados</div>
     <div id="taken-list"></div>
   </div>
-
 </div>
 
-<!-- MODAL -->
+<!-- MODAL APARTAR -->
 <div class="modal-bg" id="modal-bg">
   <div class="modal">
     <div id="modal-num-badge" class="modal-num">00</div>
     <h2 id="modal-title">Número 00</h2>
     <div class="sub" id="modal-sub">Ingresa el código CUS del cliente</div>
 
-    <!-- ASSIGN VIEW -->
     <div id="assign-view">
       <label>Código cliente (CUS-XXXXX)</label>
       <div class="input-row">
         <input type="text" id="code-input" placeholder="ej: CUS-20373 o 20373" autocomplete="off" />
-        <button class="btn-buscar" id="btn-buscar">
-          <i class="ti ti-search"></i> Buscar
-        </button>
+        <button class="btn-buscar" id="btn-buscar"><i class="ti ti-search"></i> Buscar</button>
       </div>
-      <div class="hint">Presiona Enter o haz click en Buscar para verificar el cliente</div>
+      <div class="hint">Presiona Enter o Buscar para verificar el cliente</div>
       <div class="client-card" id="client-card" style="display:none"></div>
       <div class="modal-btns">
         <button class="btn" id="btn-cancel">Cancelar</button>
-        <button class="btn primary" id="btn-confirm" disabled>
-          <i class="ti ti-lock"></i> Apartar número
-        </button>
+        <button class="btn primary" id="btn-confirm" disabled>Apartar número</button>
       </div>
     </div>
 
-    <!-- TAKEN VIEW -->
     <div id="taken-view" style="display:none">
       <div class="taken-info" id="taken-detail"></div>
       <div class="modal-btns">
         <button class="btn" id="btn-cancel2">Cerrar</button>
-        <button class="btn danger" id="btn-release">
-          <i class="ti ti-lock-open"></i> Liberar número
-        </button>
+        <button class="btn danger" id="btn-release">Liberar número</button>
       </div>
     </div>
   </div>
 </div>
 
+<!-- MODAL RESET -->
+<div class="modal-bg" id="reset-modal-bg">
+  <div class="reset-modal">
+    <i class="ti ti-alert-triangle" style="font-size:32px;color:#e24b4a;margin-bottom:8px;display:block"></i>
+    <h2>Resetear lotería</h2>
+    <p>Esto borrará todos los números apartados. Ingresa la contraseña para continuar.</p>
+    <input type="password" id="reset-pass" placeholder="••••" maxlength="10" />
+    <div class="reset-error" id="reset-error"></div>
+    <div class="reset-btns">
+      <button class="btn" id="btn-reset-cancel">Cancelar</button>
+      <button class="btn danger" id="btn-reset-confirm">Resetear todo</button>
+    </div>
+  </div>
+</div>
+
 <script>
-const STORAGE_KEY = 'loteria_drabba_v3';
 const data = {};
 let selected = null;
 let foundContact = null;
 
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
-function save() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
-}
-function load() {
+async function loadFromServer() {
   try {
-    const s = localStorage.getItem(STORAGE_KEY);
-    if (s) Object.assign(data, JSON.parse(s));
+    const res = await fetch('/api/loteria');
+    const json = await res.json();
+    Object.keys(data).forEach(k => delete data[k]);
+    Object.assign(data, json);
   } catch(e) {}
+  render();
 }
 
-function getN8nUrl() {
-  return document.getElementById('n8n-url').value.trim();
+async function saveToServer() {
+  try {
+    await fetch('/api/loteria', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+  } catch(e) {}
 }
 
 function updateStats() {
@@ -427,9 +242,7 @@ function renderList() {
         ${data[k].telefono ? `<div class="li-ts"><i class="ti ti-phone" style="font-size:11px"></i> ${data[k].telefono}</div>` : ''}
         <div class="li-ts">${data[k].ts}</div>
       </div>
-      <button class="del-btn" onclick="quickRelease(${k})" title="Liberar #${pad(k)}">
-        <i class="ti ti-x"></i>
-      </button>
+      <button class="del-btn" onclick="quickRelease(${k})"><i class="ti ti-x"></i></button>
     </div>
   `).join('');
 }
@@ -449,14 +262,12 @@ function renderGrid(filter) {
     const div = document.createElement('div');
     div.className = 'num' + (taken ? ' taken' : '') + (selected === i ? ' selected' : '');
     div.textContent = pad(i);
-    div.title = taken
-      ? `${data[i].code}${data[i].nombre ? ' — ' + data[i].nombre : ''}`
-      : `Disponible — #${pad(i)}`;
+    div.title = taken ? `${data[i].code}${data[i].nombre ? ' — ' + data[i].nombre : ''}` : `Disponible`;
     div.onclick = () => openModal(i);
     grid.appendChild(div);
   }
   if (f && !grid.children.length) {
-    grid.innerHTML = '<div class="empty">Sin coincidencias para "' + filter + '"</div>';
+    grid.innerHTML = '<div class="empty">Sin coincidencias</div>';
   }
 }
 
@@ -488,7 +299,7 @@ function openModal(num) {
       <div class="ti-ts">Apartado: ${d.ts}</div>
     `;
   } else {
-    document.getElementById('modal-sub').textContent = 'Busca el código CUS del cliente en Zoho Books';
+    document.getElementById('modal-sub').textContent = 'Busca el código CUS del cliente';
     document.getElementById('assign-view').style.display = '';
     document.getElementById('taken-view').style.display = 'none';
     document.getElementById('code-input').value = '';
@@ -512,18 +323,15 @@ async function buscarCliente() {
   const raw = document.getElementById('code-input').value.trim();
   if (!raw) return;
   const card = document.getElementById('client-card');
-  const btnConfirm = document.getElementById('btn-confirm');
   foundContact = null;
-  btnConfirm.disabled = true;
+  document.getElementById('btn-confirm').disabled = true;
   card.className = 'client-card loading';
   card.style.display = '';
   card.innerHTML = '<span class="spinner"></span> Consultando Zoho Books...';
 
   try {
-    const url = getN8nUrl() + '?customer_id=' + encodeURIComponent(raw);
-    const res = await fetch(url, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+    const res = await fetch('/webhook/consulta-cliente-loteria?customer_id=' + encodeURIComponent(raw));
     const json = await res.json();
-
     if (json.error || !json.contact) {
       card.className = 'client-card not-found';
       card.innerHTML = `<div class="client-err"><i class="ti ti-alert-circle" style="margin-right:6px"></i>${json.error || 'Cliente no encontrado'}</div>`;
@@ -537,15 +345,15 @@ async function buscarCliente() {
         ${c.email ? `<div class="client-detail"><i class="ti ti-mail"></i>${c.email}</div>` : ''}
         <div class="client-id">ID: ${c.contact_number || c.contact_id}</div>
       `;
-      btnConfirm.disabled = false;
+      document.getElementById('btn-confirm').disabled = false;
     }
   } catch(e) {
     card.className = 'client-card not-found';
-    card.innerHTML = `<div class="client-err"><i class="ti ti-wifi-off" style="margin-right:6px"></i>Error de conexión. Verifica que ngrok esté activo.</div>`;
+    card.innerHTML = `<div class="client-err"><i class="ti ti-wifi-off" style="margin-right:6px"></i>Error de conexión</div>`;
   }
 }
 
-function confirmAssign() {
+async function confirmAssign() {
   if (!selected || !foundContact) return;
   const raw = document.getElementById('code-input').value.trim();
   const now = new Date().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
@@ -556,49 +364,72 @@ function confirmAssign() {
     email: foundContact.email || '',
     ts: now
   };
-  save();
+  await saveToServer();
   closeModal();
   render();
 }
 
-function releaseNum() {
+async function releaseNum() {
   if (!selected) return;
-  if (!confirm(`¿Liberar el número ${pad(selected)}?`)) return;
   delete data[selected];
-  save();
+  await saveToServer();
   closeModal();
   render();
 }
 
-function quickRelease(num) {
-  if (!confirm(`¿Liberar el número ${pad(num)}?`)) return;
+async function quickRelease(num) {
   delete data[num];
-  save();
+  await saveToServer();
   render();
 }
 
-// Events
+// RESET
+document.getElementById('btn-reset-top').onclick = () => {
+  document.getElementById('reset-pass').value = '';
+  document.getElementById('reset-error').textContent = '';
+  document.getElementById('reset-modal-bg').classList.add('open');
+  setTimeout(() => document.getElementById('reset-pass').focus(), 100);
+};
+
+document.getElementById('btn-reset-cancel').onclick = () => {
+  document.getElementById('reset-modal-bg').classList.remove('open');
+};
+
+document.getElementById('btn-reset-confirm').onclick = async () => {
+  const pass = document.getElementById('reset-pass').value;
+  const errEl = document.getElementById('reset-error');
+  try {
+    const res = await fetch('/api/loteria/reset', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ password: pass })
+    });
+    const json = await res.json();
+    if (json.ok) {
+      Object.keys(data).forEach(k => delete data[k]);
+      document.getElementById('reset-modal-bg').classList.remove('open');
+      render();
+    } else {
+      errEl.textContent = 'Contraseña incorrecta';
+      document.getElementById('reset-pass').value = '';
+      document.getElementById('reset-pass').focus();
+    }
+  } catch(e) {
+    errEl.textContent = 'Error de conexión';
+  }
+};
+
 document.getElementById('btn-buscar').onclick = buscarCliente;
 document.getElementById('btn-confirm').onclick = confirmAssign;
 document.getElementById('btn-cancel').onclick = closeModal;
 document.getElementById('btn-cancel2').onclick = closeModal;
 document.getElementById('btn-release').onclick = releaseNum;
-document.getElementById('modal-bg').addEventListener('click', e => {
-  if (e.target === document.getElementById('modal-bg')) closeModal();
-});
-document.getElementById('code-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') buscarCliente();
-});
+document.getElementById('modal-bg').addEventListener('click', e => { if (e.target === document.getElementById('modal-bg')) closeModal(); });
+document.getElementById('reset-modal-bg').addEventListener('click', e => { if (e.target === document.getElementById('reset-modal-bg')) document.getElementById('reset-modal-bg').classList.remove('open'); });
+document.getElementById('code-input').addEventListener('keydown', e => { if (e.key === 'Enter') buscarCliente(); });
 document.getElementById('search-input').addEventListener('input', e => render(e.target.value));
-document.getElementById('n8n-url').addEventListener('change', e => {
-  localStorage.setItem('loteria_n8n_url', e.target.value.trim());
-});
 
-// Init
-const savedUrl = null // url fija via proxy;
-if (savedUrl) document.getElementById('n8n-url').value = savedUrl;
-load();
-render();
+loadFromServer();
 </script>
 </body>
 </html>
