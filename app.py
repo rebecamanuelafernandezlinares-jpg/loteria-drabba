@@ -109,6 +109,24 @@ def save_loteria():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+@app.route("/api/loteria/reset-num", methods=["POST"])
+def reset_num():
+    body = request.json
+    password = body.get("password", "")
+    numero = body.get("numero")
+    if password != RESET_PASSWORD:
+        return jsonify({"ok": False, "error": "Contraseña incorrecta"}), 403
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM loteria WHERE numero = %s", (int(numero),))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
 @app.route("/api/loteria/reset", methods=["POST"])
 def reset_loteria():
     password = request.json.get("password", "")
