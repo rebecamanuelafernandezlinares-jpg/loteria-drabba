@@ -174,7 +174,6 @@
       <div class="taken-info" id="taken-detail"></div>
       <div class="modal-btns">
         <button class="btn" id="btn-cancel2">Cerrar</button>
-        <button class="btn danger" id="btn-release">Liberar número</button>
       </div>
     </div>
   </div>
@@ -254,7 +253,7 @@ function renderList() {
         ${data[k].telefono ? `<div class="li-ts"><i class="ti ti-phone" style="font-size:11px"></i> ${data[k].telefono}</div>` : ''}
         <div class="li-ts">${data[k].ts}</div>
       </div>
-      <button class="del-btn" onclick="quickRelease(${k})"><i class="ti ti-x"></i></button>
+      <button class="del-btn" onclick="releaseConPass(k)" title="Liberar #${pad(k)}"><i class="ti ti-x"></i></button>
     </div>
   `).join('');
 }
@@ -399,19 +398,7 @@ async function confirmAssign() {
   render();
 }
 
-async function releaseNum() {
-  if (!selected) return;
-  delete data[selected];
-  await saveToServer();
-  closeModal();
-  render();
-}
 
-async function quickRelease(num) {
-  delete data[num];
-  await saveToServer();
-  render();
-}
 
 // EXPORTAR EXCEL
 document.getElementById('btn-exportar').onclick = () => {
@@ -438,6 +425,27 @@ document.getElementById('btn-exportar').onclick = () => {
   const fecha = new Date().toLocaleDateString('es-CO').replace(/\//g, '-');
   XLSX.writeFile(wb, `loteria-drabba-${fecha}.xlsx`);
 };
+
+async function releaseConPass(num) {
+  const pass = prompt('Ingresa la contraseña para liberar el número ' + pad(num) + ':');
+  if (pass === null) return;
+  try {
+    const res = await fetch('/api/loteria/reset-num', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ password: pass, numero: num })
+    });
+    const json = await res.json();
+    if (json.ok) {
+      delete data[num];
+      render();
+    } else {
+      alert('Contraseña incorrecta');
+    }
+  } catch(e) {
+    alert('Error de conexión');
+  }
+}
 
 // RESET
 document.getElementById('btn-reset-top').onclick = () => {
@@ -477,7 +485,7 @@ document.getElementById('btn-buscar').onclick = buscarCliente;
 document.getElementById('btn-confirm').onclick = confirmAssign;
 document.getElementById('btn-cancel').onclick = closeModal;
 document.getElementById('btn-cancel2').onclick = closeModal;
-document.getElementById('btn-release').onclick = releaseNum;
+
 document.getElementById('modal-bg').addEventListener('click', e => { if (e.target === document.getElementById('modal-bg')) closeModal(); });
 document.getElementById('reset-modal-bg').addEventListener('click', e => { if (e.target === document.getElementById('reset-modal-bg')) document.getElementById('reset-modal-bg').classList.remove('open'); });
 document.getElementById('code-input').addEventListener('keydown', e => { if (e.key === 'Enter') buscarCliente(); });
