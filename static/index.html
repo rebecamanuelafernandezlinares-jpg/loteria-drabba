@@ -97,6 +97,19 @@
     .reset-error { font-size: 12px; color: #a32d2d; margin-bottom: 12px; min-height: 18px; }
     .reset-btns { display: flex; gap: 10px; }
 
+    .rifa-bar { background: #fff; border-bottom: 1px solid #e8e0d8; padding: 12px 24px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .rifa-bar label { font-size: 12px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+    .rifa-bar select { padding: 9px 12px; border: 1.5px solid #ddd; border-radius: 9px; font-size: 14px; font-weight: 600; color: #1a1a1a; background: #fff; min-width: 220px; max-width: 100%; outline: none; }
+    .rifa-bar select:focus { border-color: #7a1f2e; }
+    .rifa-btn { border: 1.5px solid #ddd; background: #f5f0ec; color: #444; border-radius: 9px; padding: 9px 14px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; transition: all .15s; }
+    .rifa-btn:hover { background: #ede5dc; }
+    .rifa-btn.primary { background: #7a1f2e; border-color: #7a1f2e; color: #fff; }
+    .rifa-btn.primary:hover { background: #5c1522; }
+    .rifa-modal { background: #fff; border-radius: 16px; padding: 28px; width: 380px; max-width: 94vw; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+    .rifa-modal h2 { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+    .rifa-modal p { font-size: 13px; color: #777; margin-bottom: 16px; }
+    .rifa-modal input { width: 100%; padding: 11px 12px; border: 1.5px solid #ddd; border-radius: 9px; font-size: 15px; outline: none; margin-bottom: 8px; }
+    .rifa-modal input:focus { border-color: #7a1f2e; }
     .spinner { display: inline-block; width: 15px; height: 15px; border: 2px solid #ccc; border-top-color: #7a1f2e; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -3px; margin-right: 6px; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .empty { text-align: center; padding: 3rem; color: #aaa; font-size: 14px; }
@@ -104,6 +117,8 @@
     @media (max-width: 600px) {
       .grid { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; }
       .topbar { padding: 12px 14px; }
+      .rifa-bar { padding: 10px 14px; }
+      .rifa-bar select { min-width: 0; flex: 1; }
       .topbar-title { font-size: 16px; }
     }
   </style>
@@ -127,6 +142,13 @@
       <i class="ti ti-refresh"></i> Resetear
     </button>
   </div>
+</div>
+
+<div class="rifa-bar">
+  <label for="rifa-select">Rifa</label>
+  <select id="rifa-select"></select>
+  <button class="rifa-btn" id="btn-rifa-rename" title="Cambiar título"><i class="ti ti-pencil"></i> Renombrar</button>
+  <button class="rifa-btn primary" id="btn-rifa-nueva"><i class="ti ti-plus"></i> Nueva rifa</button>
 </div>
 
 <div class="wrap">
@@ -180,12 +202,26 @@
   </div>
 </div>
 
+<!-- MODAL RIFA (nueva / renombrar) -->
+<div class="modal-bg" id="rifa-modal-bg">
+  <div class="rifa-modal">
+    <h2 id="rifa-modal-title">Nueva rifa</h2>
+    <p id="rifa-modal-sub">Las rifas anteriores se conservan y puedes volver a verlas cuando quieras.</p>
+    <input type="text" id="rifa-titulo" maxlength="80" placeholder="ej: Rifa Octubre — Bolso Gucci" autocomplete="off" />
+    <div class="reset-error" id="rifa-error"></div>
+    <div class="reset-btns">
+      <button class="btn" id="btn-rifa-cancel">Cancelar</button>
+      <button class="btn primary" id="btn-rifa-guardar">Crear rifa</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL RESET -->
 <div class="modal-bg" id="reset-modal-bg">
   <div class="reset-modal">
     <i class="ti ti-alert-triangle" style="font-size:32px;color:#e24b4a;margin-bottom:8px;display:block"></i>
-    <h2>Resetear lotería</h2>
-    <p>Esto borrará todos los números apartados.<br>Ingresa la contraseña para continuar.</p>
+    <h2>Resetear rifa</h2>
+    <p>Esto borrará los números apartados de <b id="reset-rifa-name"></b>.<br>Ingresa la contraseña para continuar.</p>
     <input type="password" id="reset-pass" placeholder="••••" maxlength="10" />
     <div class="reset-error" id="reset-error"></div>
     <div class="reset-btns">
@@ -197,6 +233,8 @@
 
 <script>
 const data = {};
+let rifas = [];
+let rifaId = null;
 let selected = null;
 let foundContact = null;
 
@@ -213,30 +251,101 @@ function findDuplicate(contactKey) {
   });
 }
 
-async function loadFromServer() {
+function esc(t) {
+  return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function rifaActual() { return rifas.find(r => r.id === rifaId); }
+
+function renderRifaSelect() {
+  const sel = document.getElementById('rifa-select');
+  sel.innerHTML = rifas.map(r =>
+    `<option value="${r.id}"${r.id === rifaId ? ' selected' : ''}>${esc(r.titulo)} (${r.apartados}/99)</option>`
+  ).join('');
+}
+
+async function loadRifas(preferId) {
   try {
-    const res = await fetch('/api/loteria');
+    const res = await fetch('/api/rifas');
+    rifas = await res.json();
+  } catch(e) { rifas = []; }
+  if (!Array.isArray(rifas)) rifas = [];
+  const saved = Number(localStorage.getItem('rifaId'));
+  const wanted = preferId || rifaId || saved;
+  rifaId = rifas.some(r => r.id === wanted) ? wanted : (rifas[0] && rifas[0].id);
+  if (rifaId) localStorage.setItem('rifaId', rifaId);
+  renderRifaSelect();
+}
+
+async function loadFromServer() {
+  if (!rifaId) { render(); return; }
+  try {
+    const res = await fetch(`/api/rifas/${rifaId}/loteria`);
     const json = await res.json();
     Object.keys(data).forEach(k => delete data[k]);
-    Object.assign(data, json);
+    if (!json.error) Object.assign(data, json);
   } catch(e) {}
   render();
 }
 
-async function saveToServer() {
+async function cambiarRifa(id) {
+  rifaId = id;
+  localStorage.setItem('rifaId', id);
+  document.getElementById('search-input').value = '';
+  await loadFromServer();
+}
+
+let rifaModo = 'nueva';
+function abrirRifaModal(modo) {
+  rifaModo = modo;
+  const t = document.getElementById('rifa-titulo');
+  document.getElementById('rifa-error').textContent = '';
+  if (modo === 'nueva') {
+    document.getElementById('rifa-modal-title').textContent = 'Nueva rifa';
+    document.getElementById('rifa-modal-sub').textContent = 'Las rifas anteriores se conservan y puedes volver a verlas cuando quieras.';
+    document.getElementById('btn-rifa-guardar').textContent = 'Crear rifa';
+    t.value = '';
+  } else {
+    document.getElementById('rifa-modal-title').textContent = 'Cambiar título';
+    document.getElementById('rifa-modal-sub').textContent = 'Solo cambia el nombre; los números apartados no se tocan.';
+    document.getElementById('btn-rifa-guardar').textContent = 'Guardar';
+    t.value = (rifaActual() || {}).titulo || '';
+  }
+  document.getElementById('rifa-modal-bg').classList.add('open');
+  setTimeout(() => { t.focus(); t.select(); }, 100);
+}
+
+function cerrarRifaModal() {
+  document.getElementById('rifa-modal-bg').classList.remove('open');
+}
+
+async function guardarRifa() {
+  const titulo = document.getElementById('rifa-titulo').value.trim();
+  const err = document.getElementById('rifa-error');
+  if (!titulo) { err.textContent = 'Escribe un título para la rifa'; return; }
   try {
-    await fetch('/api/loteria', {
-      method: 'POST',
+    const nueva = rifaModo === 'nueva';
+    const res = await fetch(nueva ? '/api/rifas' : `/api/rifas/${rifaId}`, {
+      method: nueva ? 'POST' : 'PATCH',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(data)
+      body: JSON.stringify({ titulo })
     });
-  } catch(e) {}
+    const json = await res.json();
+    if (!json.ok) { err.textContent = json.error || 'No se pudo guardar'; return; }
+    cerrarRifaModal();
+    await loadRifas(nueva ? json.id : rifaId);
+    await loadFromServer();
+  } catch(e) {
+    err.textContent = 'Error de conexión';
+  }
 }
 
 function updateStats() {
   const t = Object.keys(data).length;
   document.getElementById('cnt-taken').textContent = t;
   document.getElementById('cnt-free').textContent = 99 - t;
+  const r = rifaActual();
+  if (r) { r.apartados = t; renderRifaSelect(); }
 }
 
 function renderList() {
@@ -249,7 +358,7 @@ function renderList() {
     <div class="list-item">
       <div class="num-badge">${pad(k)}</div>
       <div class="li-info">
-        <div class="li-code">${data[k].code}</div>
+        <div class="li-code">${esc(data[k].code)}</div>
         ${data[k].nombre ? `<div class="li-name"><i class="ti ti-user" style="font-size:11px"></i> ${data[k].nombre}</div>` : ''}
         ${data[k].telefono ? `<div class="li-ts"><i class="ti ti-phone" style="font-size:11px"></i> ${data[k].telefono}</div>` : ''}
         <div class="li-ts">${data[k].ts}</div>
@@ -386,7 +495,7 @@ async function confirmAssign() {
   if (!selected || !foundContact) return;
   const raw = document.getElementById('code-input').value.trim();
   const now = new Date().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
-  data[selected] = {
+  const registro = {
     code: foundContact.contact_number || raw,
     contact_key: getContactKey(foundContact),
     nombre: foundContact.contact_name || '',
@@ -394,7 +503,16 @@ async function confirmAssign() {
     email: foundContact.email || '',
     ts: now
   };
-  await saveToServer();
+  try {
+    const res = await fetch(`/api/rifas/${rifaId}/loteria/${selected}`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(registro)
+    });
+    const json = await res.json();
+    if (!json.ok) { alert('No se pudo apartar el número'); return; }
+  } catch(e) { alert('Error de conexión'); return; }
+  data[selected] = registro;
   closeModal();
   render();
 }
@@ -421,20 +539,21 @@ document.getElementById('btn-exportar').onclick = () => {
   ];
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Lotería DRABBA');
+  const tituloRifa = (rifaActual() || {}).titulo || 'Lotería DRABBA';
+  XLSX.utils.book_append_sheet(wb, ws, tituloRifa.replace(/[\\\/?*\[\]:]/g, ' ').slice(0, 31));
 
   const fecha = new Date().toLocaleDateString('es-CO').replace(/\//g, '-');
-  XLSX.writeFile(wb, `loteria-drabba-${fecha}.xlsx`);
+  XLSX.writeFile(wb, `${tituloRifa.replace(/[^\w\-áéíóúñÁÉÍÓÚÑ ]+/g, '').trim().replace(/\s+/g, '-') || 'loteria-drabba'}-${fecha}.xlsx`);
 };
 
 async function releaseConPass(num) {
   const pass = prompt('Ingresa la contraseña para liberar el número ' + pad(num) + ':');
   if (pass === null) return;
   try {
-    const res = await fetch('/api/loteria/reset-num', {
+    const res = await fetch(`/api/rifas/${rifaId}/loteria/${num}/liberar`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ password: pass, numero: num })
+      body: JSON.stringify({ password: pass })
     });
     const json = await res.json();
     if (json.ok) {
@@ -453,6 +572,7 @@ async function releaseConPass(num) {
 document.getElementById('btn-reset-top').onclick = () => {
   document.getElementById('reset-pass').value = '';
   document.getElementById('reset-error').textContent = '';
+  document.getElementById('reset-rifa-name').textContent = (rifaActual() || {}).titulo || '';
   document.getElementById('reset-modal-bg').classList.add('open');
   setTimeout(() => document.getElementById('reset-pass').focus(), 100);
 };
@@ -463,7 +583,7 @@ document.getElementById('btn-reset-confirm').onclick = async () => {
   const pass = document.getElementById('reset-pass').value;
   const errEl = document.getElementById('reset-error');
   try {
-    const res = await fetch('/api/loteria/reset', {
+    const res = await fetch(`/api/rifas/${rifaId}/loteria/reset`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ password: pass })
@@ -494,7 +614,15 @@ document.getElementById('reset-modal-bg').addEventListener('click', e => { if (e
 document.getElementById('code-input').addEventListener('keydown', e => { if (e.key === 'Enter') buscarCliente(); });
 document.getElementById('search-input').addEventListener('input', e => render(e.target.value));
 
-loadFromServer();
+document.getElementById('rifa-select').addEventListener('change', e => cambiarRifa(Number(e.target.value)));
+document.getElementById('btn-rifa-nueva').onclick = () => abrirRifaModal('nueva');
+document.getElementById('btn-rifa-rename').onclick = () => abrirRifaModal('renombrar');
+document.getElementById('btn-rifa-cancel').onclick = cerrarRifaModal;
+document.getElementById('btn-rifa-guardar').onclick = guardarRifa;
+document.getElementById('rifa-titulo').addEventListener('keydown', e => { if (e.key === 'Enter') guardarRifa(); });
+document.getElementById('rifa-modal-bg').addEventListener('click', e => { if (e.target === document.getElementById('rifa-modal-bg')) cerrarRifaModal(); });
+
+loadRifas().then(loadFromServer);
 </script>
 </body>
 </html>
