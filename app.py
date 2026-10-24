@@ -28,39 +28,73 @@ def init_db():
             data JSONB NOT NULL
         )
     """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS rifas (
+            id SERIAL PRIMARY KEY,
+            titulo TEXT NOT NULL,
+            creada TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+    """)
+    cur.execute("ALTER TABLE loteria ADD COLUMN IF NOT EXISTS rifa_id INTEGER")
+    # Migración: los números que ya existían pasan a "Rifa 1"
+    cur.execute("SELECT COUNT(*) FROM rifas")
+    if cur.fetchone()[0] == 0:
+        cur.execute("INSERT INTO rifas (titulo) VALUES ('Rifa 1') RETURNING id")
+        primera = cur.fetchone()[0]
+    else:
+        cur.execute("SELECT MIN(id) FROM rifas")
+        primera = cur.fetchone()[0]
+    cur.execute("UPDATE loteria SET rifa_id = %s WHERE rifa_id IS NULL", (primera,))
+    cur.execute("ALTER TABLE loteria ALTER COLUMN rifa_id SET NOT NULL")
+    # La llave primaria pasa de (numero) a (rifa_id, numero)
+    cur.execute("""
+        SELECT COUNT(*) FROM information_schema.key_column_usage
+        WHERE table_name = 'loteria' AND constraint_name = 'loteria_pkey'
+          AND column_name = 'rifa_id'
+    """)
+    if cur.fetchone()[0] == 0:
+        cur.execute("ALTER TABLE loteria DROP CONSTRAINT IF EXISTS loteria_pkey")
+        cur.execute("ALTER TABLE loteria ADD PRIMARY KEY (rifa_id, numero)")
     conn.commit()
     cur.close()
     conn.close()
 
 
-def load_data():
+def listar_rifas():
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute("SELECT numero, data FROM loteria")
+    cur.execute("""
+        SELECT r.id, r.titulo, r.creada, COUNT(l.numero)
+        FROM rifas r LEFT JOIN loteria l ON l.rifa_id = r.id
+        GROUP BY r.id ORDER BY r.id DESC
+    """)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [
+        {"id": i, "titulo": t, "creada": c.isoformat(), "apartados": n}
+        for i, t, c, n in rows
+    ]
+
+
+def load_data(rifa_id):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT numero, data FROM loteria WHERE rifa_id = %s", (rifa_id,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
     return {str(num): d for num, d in rows}
 
 
-def save_data(data):
+def asignar_numero(rifa_id, numero, d):
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute("DELETE FROM loteria")
-    for num, d in data.items():
-        cur.execute(
-            "INSERT INTO loteria (numero, data) VALUES (%s, %s)",
-            (int(num), psycopg2.extras.Json(d))
-        )
-    conn.commit()
-    cur.close()
-    conn.close()
-
-
-def reset_data():
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("DELETE FROM loteria")
+    cur.execute(
+        """INSERT INTO loteria (rifa_id, numero, data) VALUES (%s, %s, %s)
+           ON CONFLICT (rifa_id, numero) DO UPDATE SET data = EXCLUDED.data""",
+        (rifa_id, int(numero), psycopg2.extras.Json(d))
+    )
     conn.commit()
     cur.close()
     conn.close()
@@ -91,35 +125,45 @@ def buscar_cliente():
         return jsonify({"error": "Respuesta inválida", "raw": r.text[:300]}), 502
 
 
-@app.route("/api/loteria", methods=["GET"])
-def get_loteria():
+def check_pass(body):
+    return (body or {}).get("password", "") == RESET_PASSWORD
+
+
+@app.route("/api/rifas", methods=["GET"])
+def get_rifas():
     try:
-        return jsonify(load_data())
+        return jsonify(listar_rifas())
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/api/loteria", methods=["POST"])
-def save_loteria():
+@app.route("/api/rifas", methods=["POST"])
+def crear_rifa():
+    titulo = ((request.json or {}).get("titulo") or "").strip()
+    if not titulo:
+        return jsonify({"ok": False, "error": "El título es obligatorio"}), 400
     try:
-        data = request.json
-        save_data(data)
-        return jsonify({"ok": True})
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO rifas (titulo) VALUES (%s) RETURNING id", (titulo[:80],))
+        nuevo = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"ok": True, "id": nuevo})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route("/api/loteria/reset-num", methods=["POST"])
-def reset_num():
-    body = request.json
-    password = body.get("password", "")
-    numero = body.get("numero")
-    if password != RESET_PASSWORD:
-        return jsonify({"ok": False, "error": "Contraseña incorrecta"}), 403
+@app.route("/api/rifas/<int:rifa_id>", methods=["PATCH"])
+def renombrar_rifa(rifa_id):
+    titulo = ((request.json or {}).get("titulo") or "").strip()
+    if not titulo:
+        return jsonify({"ok": False, "error": "El título es obligatorio"}), 400
     try:
         conn = get_conn()
         cur = conn.cursor()
-        cur.execute("DELETE FROM loteria WHERE numero = %s", (int(numero),))
+        cur.execute("UPDATE rifas SET titulo = %s WHERE id = %s", (titulo[:80], rifa_id))
         conn.commit()
         cur.close()
         conn.close()
@@ -127,13 +171,53 @@ def reset_num():
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
-@app.route("/api/loteria/reset", methods=["POST"])
-def reset_loteria():
-    password = request.json.get("password", "")
-    if password != RESET_PASSWORD:
+
+@app.route("/api/rifas/<int:rifa_id>/loteria", methods=["GET"])
+def get_loteria(rifa_id):
+    try:
+        return jsonify(load_data(rifa_id))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/rifas/<int:rifa_id>/loteria/<int:numero>", methods=["PUT"])
+def apartar_numero(rifa_id, numero):
+    if not 1 <= numero <= 99:
+        return jsonify({"ok": False, "error": "Número fuera de rango"}), 400
+    try:
+        asignar_numero(rifa_id, numero, request.json)
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/rifas/<int:rifa_id>/loteria/<int:numero>/liberar", methods=["POST"])
+def liberar_numero(rifa_id, numero):
+    if not check_pass(request.json):
         return jsonify({"ok": False, "error": "Contraseña incorrecta"}), 403
     try:
-        reset_data()
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM loteria WHERE rifa_id = %s AND numero = %s", (rifa_id, numero))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/rifas/<int:rifa_id>/loteria/reset", methods=["POST"])
+def reset_loteria(rifa_id):
+    if not check_pass(request.json):
+        return jsonify({"ok": False, "error": "Contraseña incorrecta"}), 403
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM loteria WHERE rifa_id = %s", (rifa_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
