@@ -255,6 +255,21 @@ function esc(t) {
   return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// Si el servidor gratis estaba dormido, la primera petición falla o devuelve una
+// página que no es JSON. En ese caso esperamos y reintentamos (hasta ~20 s extra).
+async function fetchJSON(url, opts, onWait, tries = 5) {
+  for (let i = 0; i < tries; i++) {
+    try {
+      const res = await fetch(url, opts);
+      return await res.json();
+    } catch (e) {
+      if (i === tries - 1) throw e;
+      if (onWait) onWait();
+      await new Promise(r => setTimeout(r, 5000));
+    }
+  }
+}
+
 function rifaActual() { return rifas.find(r => r.id === rifaId); }
 
 function renderRifaSelect() {
@@ -266,8 +281,7 @@ function renderRifaSelect() {
 
 async function loadRifas(preferId) {
   try {
-    const res = await fetch('/api/rifas');
-    rifas = await res.json();
+    rifas = await fetchJSON('/api/rifas');
   } catch(e) { rifas = []; }
   if (!Array.isArray(rifas)) rifas = [];
   const saved = Number(localStorage.getItem('rifaId'));
@@ -280,8 +294,7 @@ async function loadRifas(preferId) {
 async function loadFromServer() {
   if (!rifaId) { render(); return; }
   try {
-    const res = await fetch(`/api/rifas/${rifaId}/loteria`);
-    const json = await res.json();
+    const json = await fetchJSON(`/api/rifas/${rifaId}/loteria`);
     Object.keys(data).forEach(k => delete data[k]);
     if (!json.error) Object.assign(data, json);
   } catch(e) {}
@@ -451,8 +464,11 @@ async function buscarCliente() {
   card.innerHTML = '<span class="spinner"></span> Consultando Zoho Books...';
 
   try {
-    const res = await fetch('/webhook/consulta-cliente-loteria?customer_id=' + encodeURIComponent(raw));
-    const json = await res.json();
+    const json = await fetchJSON(
+      '/webhook/consulta-cliente-loteria?customer_id=' + encodeURIComponent(raw),
+      undefined,
+      () => { card.innerHTML = '<span class="spinner"></span> El servidor estaba dormido, despertándolo… puede tardar hasta 1 minuto'; }
+    );
 
     if (json.error || !json.contact) {
       card.className = 'client-card not-found';
@@ -503,15 +519,18 @@ async function confirmAssign() {
     email: foundContact.email || '',
     ts: now
   };
+  const btn = document.getElementById('btn-confirm');
+  btn.disabled = true;
+  btn.textContent = 'Guardando…';
   try {
-    const res = await fetch(`/api/rifas/${rifaId}/loteria/${selected}`, {
+    const json = await fetchJSON(`/api/rifas/${rifaId}/loteria/${selected}`, {
       method: 'PUT',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(registro)
-    });
-    const json = await res.json();
-    if (!json.ok) { alert('No se pudo apartar el número'); return; }
-  } catch(e) { alert('Error de conexión'); return; }
+    }, () => { btn.textContent = 'Despertando servidor…'; });
+    if (!json.ok) { alert('No se pudo apartar el número'); btn.disabled = false; return; }
+  } catch(e) { alert('Error de conexión'); btn.disabled = false; return; }
+  finally { btn.textContent = 'Apartar número'; }
   data[selected] = registro;
   closeModal();
   render();
