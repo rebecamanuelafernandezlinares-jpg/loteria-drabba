@@ -9,7 +9,7 @@ import psycopg2.extras
 app = Flask(__name__, static_folder="static")
 CORS(app)
 
-BASE_URL = os.environ.get("N8N_URL", "")
+BASE_URL = os.environ.get("N8N_URL", "").strip().rstrip("/")
 HEADERS = {"Content-Type": "application/json", "ngrok-skip-browser-warning": "true"}
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 RESET_PASSWORD = os.environ.get("RESET_PASSWORD", "0000")
@@ -114,19 +114,24 @@ def index():
 @app.route("/webhook/consulta-cliente-loteria")
 def buscar_cliente():
     customer_id = request.args.get("customer_id", "")
-    r = requests.get(
-        f"{BASE_URL}/webhook/consulta-cliente-loteria",
-        params={"customer_id": customer_id},
-        headers=HEADERS
-    )
+    if not BASE_URL:
+        return jsonify({"error": "N8N_URL no está configurada en el servidor"}), 500
+    try:
+        r = requests.get(
+            f"{BASE_URL}/webhook/consulta-cliente-loteria",
+            params={"customer_id": customer_id},
+            headers=HEADERS,
+            timeout=25
+        )
+    except requests.RequestException as e:
+        return jsonify({"error": f"No se pudo conectar con n8n ({type(e).__name__})"}), 502
     try:
         return jsonify(r.json()), r.status_code
     except Exception:
-        return jsonify({"error": "Respuesta inválida", "raw": r.text[:300]}), 502
-
-
-def check_pass(body):
-    return (body or {}).get("password", "") == RESET_PASSWORD
+        return jsonify({
+            "error": f"n8n respondió {r.status_code} sin JSON (¿flujo inactivo?)",
+            "raw": r.text[:300]
+        }), 502
 
 
 @app.route("/api/rifas", methods=["GET"])
