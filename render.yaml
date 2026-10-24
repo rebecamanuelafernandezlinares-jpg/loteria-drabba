@@ -6,4 +6,4 @@ services:
     startCommand: gunicorn app:app
     envVars:
       - key: N8N_URL
-        value: https://erythrocytic-faustina-breathily.ngrok-free.dev
+        value: https://n8n.hertechnology.co
