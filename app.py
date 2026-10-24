@@ -16,7 +16,7 @@ RESET_PASSWORD = os.environ.get("RESET_PASSWORD", "0000")
 
 
 def get_conn():
-    return psycopg2.connect(DATABASE_URL, sslmode="require")
+    return psycopg2.connect(DATABASE_URL, sslmode=os.environ.get("DB_SSLMODE", "require"))
 
 
 def init_db():
