@@ -111,6 +111,18 @@ def index():
     return send_from_directory("static", "index.html")
 
 
+@app.route("/manifest.webmanifest")
+def manifest():
+    return send_from_directory("static", "manifest.webmanifest", mimetype="application/manifest+json")
+
+
+@app.route("/sw.js")
+def service_worker():
+    resp = send_from_directory("static", "sw.js", mimetype="application/javascript")
+    resp.headers["Cache-Control"] = "no-cache"
+    return resp
+
+
 @app.route("/webhook/consulta-cliente-loteria")
 def buscar_cliente():
     customer_id = request.args.get("customer_id", "")
