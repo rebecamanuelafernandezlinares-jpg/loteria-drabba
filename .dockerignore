@@ -1,0 +1,8 @@
+.git
+.gitignore
+__pycache__/
+*.pyc
+render.yaml
+Dockerfile
+.dockerignore
+.env
