@@ -3,6 +3,7 @@ from flask_cors import CORS
 import requests
 import os
 import json
+import hmac
 import psycopg2
 import psycopg2.extras
 
@@ -13,10 +14,17 @@ BASE_URL = os.environ.get("N8N_URL", "").strip().rstrip("/")
 HEADERS = {"Content-Type": "application/json", "ngrok-skip-browser-warning": "true"}
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 RESET_PASSWORD = os.environ.get("RESET_PASSWORD", "0000")
+# Render/Neon exigen SSL ("require"). Postgres interno de Dokploy no lo trae: usar DB_SSLMODE=disable
+DB_SSLMODE = os.environ.get("DB_SSLMODE", "require")
+
+
+def check_pass(body):
+    pwd = str((body or {}).get("password", ""))
+    return hmac.compare_digest(pwd.encode(), RESET_PASSWORD.encode())
 
 
 def get_conn():
-    return psycopg2.connect(DATABASE_URL, sslmode="require")
+    return psycopg2.connect(DATABASE_URL, sslmode=DB_SSLMODE)
 
 
 def init_db():
